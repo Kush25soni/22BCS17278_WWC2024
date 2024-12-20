@@ -2,168 +2,226 @@
 #include <vector>
 #include <fstream>
 #include <string>
+#include <algorithm>
 
-class InventoryItem {
-public:
+class Item {
+private:
     int itemID;
     std::string name;
     std::string category;
     int quantity;
     int reorderLevel;
 
-    InventoryItem(int id, const std::string& n, const std::string& c, int q, int r)
-        : itemID(id), name(n), category(c), quantity(q), reorderLevel(r) {}
+public:
+    // Constructor
+    Item(int id, const std::string& itemName, const std::string& itemCategory, int qty, int reorder)
+        : itemID(id), name(itemName), category(itemCategory), quantity(qty), reorderLevel(reorder) {}
 
+    // Accessors
+    int getItemID() const { return itemID; }
+    std::string getName() const { return name; }
+    std::string getCategory() const { return category; }
+    int getQuantity() const { return quantity; }
+    int getReorderLevel() const { return reorderLevel; }
+
+    // Mutators
+    void updateQuantity(int qty) { quantity = qty; }
+
+    // Check if reorder is needed
+    bool needsReorder() const { return quantity < reorderLevel; }
+
+    // Display item details
     void display() const {
         std::cout << "ID: " << itemID << ", Name: " << name
-                  << ", Category: " << category << ", Quantity: " << quantity
+                  << ", Category: " << category
+                  << ", Quantity: " << quantity
                   << ", Reorder Level: " << reorderLevel << std::endl;
     }
 };
 
-class InventoryManagementSystem {
+class InventoryManager {
 private:
-    std::vector<InventoryItem> inventory;
+    std::vector<Item> inventory;
 
 public:
     void addItem() {
-        int id, quantity, reorderLevel;
+        int id, qty, reorder;
         std::string name, category;
 
         std::cout << "Enter Item ID: ";
         std::cin >> id;
-        std::cin.ignore(); // Clear newline from input buffer
-        std::cout << "Enter Item Name: ";
+        std::cin.ignore(); // Clear buffer
+        std::cout << "Enter Name: ";
         std::getline(std::cin, name);
-        std::cout << "Enter Item Category: ";
+        std::cout << "Enter Category: ";
         std::getline(std::cin, category);
-        std::cout << "Enter Item Quantity: ";
-        std::cin >> quantity;
+        std::cout << "Enter Quantity: ";
+        std::cin >> qty;
         std::cout << "Enter Reorder Level: ";
-        std::cin >> reorderLevel;
+        std::cin >> reorder;
 
-        inventory.emplace_back(id, name, category, quantity, reorderLevel);
+        inventory.emplace_back(id, name, category, qty, reorder);
         std::cout << "Item added successfully!\n";
     }
 
     void updateStock() {
-        int id, quantity;
+        int id, qty;
         std::cout << "Enter Item ID to update: ";
         std::cin >> id;
 
-        for (auto& item : inventory) {
-            if (item.itemID == id) {
-                std::cout << "Current Quantity: " << item.quantity << std::endl;
-                std::cout << "Enter new quantity: ";
-                std::cin >> quantity;
-                item.quantity = quantity;
-                std::cout << "Stock updated successfully!\n";
-                return;
-            }
+        auto it = std::find_if(inventory.begin(), inventory.end(), [id](const Item& item) {
+            return item.getItemID() == id;
+        });
+
+        if (it != inventory.end()) {
+            std::cout << "Enter new quantity: ";
+            std::cin >> qty;
+            it->updateQuantity(qty);
+            std::cout << "Stock updated successfully!\n";
+        } else {
+            std::cout << "Item not found.\n";
         }
-        std::cout << "Item not found!\n";
     }
 
     void viewInventory() const {
         std::cout << "Current Inventory:\n";
         for (const auto& item : inventory) {
             item.display();
-            if (item.quantity < item.reorderLevel) {
-                std::cout << "ALERT: Stock below reorder level for " << item.name << "!\n";
-            }
         }
     }
 
-    void searchItem() const {
-        std::string name;
-        std::cout << "Enter Item Name to search: ";
+    void searchByName() const {
+        std::string searchName;
+        std::cout << "Enter item name to search: ";
         std::cin.ignore();
-        std::getline(std::cin, name);
+        std::getline(std::cin, searchName);
 
         for (const auto& item : inventory) {
-            if (item.name == name) {
+            if (item.getName() == searchName) {
                 item.display();
-                return;
             }
         }
-        std::cout << "Item not found!\n";
     }
 
     void exportInventory() const {
-        std::ofstream outFile("inventory_report.txt");
+        std::ofstream outFile("inventory.txt");
         if (outFile.is_open()) {
             for (const auto& item : inventory) {
-                outFile << item.itemID << "," << item.name << "," << item.category
-                        << "," << item.quantity << "," << item.reorderLevel << "\n";
+                outFile << item.getItemID() << ","
+                        << item.getName() << ","
+                        << item.getCategory() << ","
+                        << item.getQuantity() << ","
+                        << item.getReorderLevel() << "\n";
             }
             outFile.close();
-            std::cout << "Inventory exported to inventory_report.txt\n";
+            std::cout << "Inventory exported to inventory.txt successfully!\n";
         } else {
-            std::cout << "Error opening file for writing!\n";
+            std::cerr << "Error opening file for export.\n";
         }
     }
 
-    void menu() {
-        int choice;
-        do {
-            std::cout << "\nWarehouse Inventory Management System\n";
-            std::cout << "1. Add Item\n";
-            std::cout << "2. Update Stock\n";
-            std::cout << "3. View Inventory\n";
-            std::cout << "4. Search Item\n";
-            std::cout << "5. Export Inventory\n";
-            std::cout << "6. Exit\n";
-            std::cout << "Enter your choice: ";
-            std::cin >> choice;
-
-            switch (choice) {
-                case 1: addItem(); break;
-                case 2: updateStock(); break;
-                case 3: viewInventory(); break;
-                case 4: searchItem(); break;
-                case 5: exportInventory(); break;
-                case 6: std::cout << "Exiting...\n"; break;
-                default: std::cout << "Invalid choice! Please try again.\n";
+    void checkReorderAlerts() const {
+        for (const auto& item : inventory) {
+            if (item.needsReorder()) {
+                std::cout << "ALERT: Item '" << item.getName()
+                          << "' needs to be reordered.\n";
             }
-        } while (choice != 6);
+        }
     }
 };
 
 int main() {
-    InventoryManagementSystem ims;
-    ims.menu();
+    InventoryManager manager;
+    int choice;
+
+    do {
+        std::cout << "\nWarehouse Inventory Management System\n";
+        std::cout << "1. Add Item\n";
+        std::cout << "2. Update Stock\n";
+        std::cout << "3. View Inventory\n";
+        std::cout << "4. Search Item by Name\n";
+        std::cout << "5. Export Inventory\n";
+        std::cout << "6. Check Reorder Alerts\n";
+        std::cout << "7. Exit\n";
+        std::cout << "Enter your choice: ";
+        std::cin >> choice;
+
+        switch (choice) {
+        case 1:
+            manager.addItem();
+            break;
+        case 2:
+            manager.updateStock();
+            break;
+        case 3:
+            manager.viewInventory();
+            break;
+        case 4:
+            manager.searchByName();
+            break;
+        case 5:
+            manager.exportInventory();
+            break;
+        case 6:
+            manager.checkReorderAlerts();
+            break;
+        case 7:
+            std::cout << "Exiting system. Goodbye!\n";
+            break;
+        default:
+            std::cout << "Invalid choice. Please try again.\n";
+        }
+    } while (choice != 7);
+
     return 0;
 }
 
 
-**************************************PROCEDURE*******************************************************************
 
-Class InventoryItem:
 
-Represents an inventory item with properties like ID, name, category, quantity, and reorder level.
-Has a display method to print item details.
-Class InventoryManagementSystem:
+/******************************************************************************************************************************************************
+Code Output:
 
-Manages the inventory using a vector of InventoryItem objects.
-Key methods:
-addItem: Adds a new item to the inventory.
-updateStock: Updates the stock quantity of an existing item.
-viewInventory: Displays all items and alerts for low stock.
-searchItem: Searches for an item by name.
-exportInventory: Saves inventory data to a file.
-menu Method:
 
-Displays a menu with options to:
-Add Item
-Update Stock
-View Inventory
-Search Item
-Export Inventory
-Exit
-Executes the selected operation in a loop until "Exit" is chosen.
-Main Function:
+Warehouse Inventory Management System
+1. Add Item
+2. Update Stock
+3. View Inventory
+4. Search Item by Name
+5. Export Inventory
+6. Check Reorder Alerts
+7. Exit
+Enter your choice: 1
+Enter Item ID: 101
+Enter Name: Kushal Soni
+Enter Category: A
+Enter Quantity: 1500
+Enter Reorder Level: 10
 
-Creates an instance of InventoryManagementSystem.
-Starts the application by calling the menu.
-    return 0;
-}
+Warehouse Inventory Management System
+1. Add Item
+2. Update Stock
+3. View Inventory
+4. Search Item by Name
+5. Export Inventory
+6. Check Reorder Alerts
+7. Exit
+Enter your choice: 2
+Enter Item ID to update: 101
+Enter new quantity: 1600
+Stock updated successfully!
+
+Warehouse Inventory Management System
+1. Add Item
+2. Update Stock
+3. View Inventory
+4. Search Item by Name
+5. Export Inventory
+6. Check Reorder Alerts
+7. Exit
+Enter your choice: 3
+Current Inventory:
+ID: 101, Name: Kushal Soni, Category: A, Quantity: 1600, Reorder Level: 10
+
+
+********************************************************************************************************/
