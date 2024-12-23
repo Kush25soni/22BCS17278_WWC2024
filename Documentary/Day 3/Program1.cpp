@@ -1,4 +1,5 @@
 #include <iostream>
+#include <stack>
 using namespace std;
 
 // Definition for singly-linked list.
@@ -10,26 +11,49 @@ struct ListNode {
 
 // Function to add two numbers represented by linked lists
 ListNode* addTwoNumbers(ListNode* l1, ListNode* l2) {
-    ListNode* dummy = new ListNode(0);
-    ListNode* current = dummy;
-    int carry = 0;
+    stack<int> stack1, stack2;
 
-    while (l1 != NULL || l2 != NULL || carry != 0) {
-        int sum = carry;
-        if (l1 != NULL) {
-            sum += l1->val;
-            l1 = l1->next;
-        }
-        if (l2 != NULL) {
-            sum += l2->val;
-            l2 = l2->next;
-        }
-        carry = sum / 10;
-        current->next = new ListNode(sum % 10);
-        current = current->next;
+    // Push all elements of l1 into stack1
+    while (l1 != NULL) {
+        stack1.push(l1->val);
+        l1 = l1->next;
     }
 
-    return dummy->next;
+    // Push all elements of l2 into stack2
+    while (l2 != NULL) {
+        stack2.push(l2->val);
+        l2 = l2->next;
+    }
+
+    int carry = 0;
+    ListNode* result = NULL;
+
+    // Perform addition using stacks
+    while (!stack1.empty() || !stack2.empty() || carry != 0) {
+        int sum = carry;
+        if (!stack1.empty()) {
+            sum += stack1.top();
+            stack1.pop();
+        }
+        if (!stack2.empty()) {
+            sum += stack2.top();
+            stack2.pop();
+        }
+
+        carry = sum / 10;
+        ListNode* newNode = new ListNode(sum % 10);
+        newNode->next = result;
+        result = newNode;
+    }
+
+    // Combine all nodes into a single node
+    int combinedValue = 0;
+    while (result != NULL) {
+        combinedValue = combinedValue * 10 + result->val;
+        result = result->next;
+    }
+
+    return new ListNode(combinedValue);
 }
 
 // Helper function to create a linked list from user input
@@ -40,7 +64,7 @@ ListNode* createLinkedList() {
 
     if (n <= 0) return NULL;
 
-    cout << "Enter the digits in reverse order (space-separated): ";
+    cout << "Enter the digits in normal order (space-separated): ";
     ListNode* head = NULL;
     ListNode* tail = NULL;
 
@@ -60,14 +84,13 @@ ListNode* createLinkedList() {
     return head;
 }
 
-// Helper function to print a linked list
-void printLinkedList(ListNode* head) {
-    while (head != NULL) {
-        cout << head->val;
-        if (head->next != NULL) cout << " -> ";
-        head = head->next;
+// Helper function to print a single node
+void printSingleNode(ListNode* node) {
+    if (node != NULL) {
+        cout << node->val << endl;
+    } else {
+        cout << "Empty list" << endl;
     }
-    cout << endl;
 }
 
 int main() {
@@ -79,23 +102,23 @@ int main() {
 
     ListNode* result = addTwoNumbers(l1, l2);
 
-    cout << "Resulting linked list: ";
-    printLinkedList(result);
+    cout << "Resulting single node: ";
+    printSingleNode(result);
 
     return 0;
 }
 
 
-/******************************************************
+/********************************************************
 
 Output:
 
 Input for the first number:
-Enter the number of digits: 1
-Enter the digits in reverse order (space-separated): 2
+Enter the number of digits: 2
+Enter the digits in normal order (space-separated): 1 5
 Input for the second number:
-Enter the number of digits: 1
-Enter the digits in reverse order (space-separated): 3
-Resulting linked list: 5
+Enter the number of digits: 2
+Enter the digits in normal order (space-separated): 5 1
+Resulting single node: 66
 
-    ******************************************************/
+*****************************************************************/    
